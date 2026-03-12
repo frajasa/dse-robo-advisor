@@ -1,0 +1,160 @@
+# ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum RiskTolerance {
+    CONSERVATIVE
+    MODERATE
+    AGGRESSIVE
+}
+
+enum InvestmentGoal {
+    RETIREMENT
+    EDUCATION
+    WEALTH
+    INCOME
+}
+
+enum SubscriptionTier {
+    FREE
+    PREMIUM
+    ENTERPRISE
+}
+
+# ─── Types ───────────────────────────────────────────────────────────────────
+
+type User {
+    id: ID!
+    email: String!
+    fullName: String!
+    phone: String
+    role: String!
+    isActive: Boolean!
+    createdAt: String
+    updatedAt: String
+    profile: InvestorProfile
+    subscription: Subscription
+}
+
+type InvestorProfile {
+    id: ID!
+    monthlyIncome: Float
+    capitalAvailable: Float
+    riskTolerance: RiskTolerance!
+    investmentHorizon: Int!
+    primaryGoal: InvestmentGoal!
+    createdAt: String
+    updatedAt: String
+}
+
+type Stock {
+    id: ID!
+    symbol: String!
+    companyName: String!
+    sector: String
+    expectedReturn: Float
+    volatility: Float
+    dividendYield: Float
+    isActive: Boolean!
+    listedDate: String
+    marketCap: Float
+    createdAt: String
+}
+
+type Portfolio {
+    id: ID!
+    name: String!
+    riskProfile: String!
+    expectedReturn: Float
+    expectedVolatility: Float
+    sharpeRatio: Float
+    projectedAnnualDividend: Float
+    isActive: Boolean!
+    createdAt: String
+    lastRebalanced: String
+    holdings: [PortfolioHolding!]!
+    metrics: PortfolioMetrics
+}
+
+type PortfolioHolding {
+    id: ID!
+    symbol: String!
+    name: String!
+    allocationPct: Float!
+    dividendYield: Float
+    sector: String
+    rationale: String
+    createdAt: String
+}
+
+type PortfolioMetrics {
+    expectedReturn: Float
+    expectedVolatility: Float
+    sharpeRatio: Float
+    projectedAnnualDividend: Float
+    holdingsCount: Int!
+}
+
+type Subscription {
+    id: ID!
+    tier: SubscriptionTier!
+    validFrom: String
+    validUntil: String
+    isActive: Boolean!
+    paymentRef: String
+}
+
+type AuthPayload {
+    token: String!
+    tokenType: String!
+    userId: ID!
+    email: String!
+    fullName: String!
+}
+
+# ─── Inputs ──────────────────────────────────────────────────────────────────
+
+input RegisterInput {
+    email: String!
+    password: String!
+    fullName: String!
+    phone: String
+}
+
+input LoginInput {
+    email: String!
+    password: String!
+}
+
+input ProfileInput {
+    monthlyIncome: Float
+    capitalAvailable: Float
+    riskTolerance: RiskTolerance!
+    investmentHorizon: Int!
+    primaryGoal: InvestmentGoal!
+}
+
+input GeneratePortfolioInput {
+    name: String!
+    riskTolerance: RiskTolerance
+}
+
+# ─── Queries ─────────────────────────────────────────────────────────────────
+
+type Query {
+    me: User
+    myProfile: InvestorProfile
+    myPortfolios: [Portfolio!]!
+    portfolio(id: ID!): Portfolio
+    stocks: [Stock!]!
+    stock(symbol: String!): Stock
+}
+
+# ─── Mutations ───────────────────────────────────────────────────────────────
+
+type Mutation {
+    register(input: RegisterInput!): AuthPayload!
+    login(input: LoginInput!): AuthPayload!
+    createProfile(input: ProfileInput!): InvestorProfile!
+    updateProfile(input: ProfileInput!): InvestorProfile!
+    generatePortfolio(input: GeneratePortfolioInput!): Portfolio!
+    deletePortfolio(id: ID!): Boolean!
+}

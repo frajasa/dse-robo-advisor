@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dse_advisor}
+      POSTGRES_USER: ${POSTGRES_USER:-dse_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    ports:
+      - "${POSTGRES_PORT_BIND:-127.0.0.1:5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dse-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-dse_admin} -d $${POSTGRES_DB:-dse_advisor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    ports:
+      - "${REDIS_PORT_BIND:-127.0.0.1:6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - dse-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  analytics-engine:
+    build: ./dse-analytics-engine
+    expose:
+      - "8000"
+    environment:
+      APP_NAME: dse-analytics-engine
+      DEBUG: "${DEBUG:-false}"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    networks:
+      - dse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  backend:
+    build: .
+    expose:
+      - "8060"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-dse_advisor}
+      POSTGRES_USER: ${POSTGRES_USER:-dse_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+      FASTAPI_BASE_URL: http://analytics-engine:8000
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      GRAPHIQL_ENABLED: ${GRAPHIQL_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      analytics-engine:
+        condition: service_healthy
+    networks:
+      - dse-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./dse-advisor-frontend
+    expose:
+      - "3000"
+    environment:
+      NEXT_PUBLIC_GRAPHQL_URL: ${NEXT_PUBLIC_GRAPHQL_URL:-/graphql}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-/ws}
+    depends_on:
+      - backend
+    networks:
+      - dse-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+      - analytics-engine
+    networks:
+      - dse-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dse-network:
+    driver: bridge

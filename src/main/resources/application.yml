@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: dse-roboadvisor
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:dse_advisor}
+    username: ${POSTGRES_USER:dse_admin}
+    password: ${POSTGRES_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  graphql:
+    graphiql:
+      enabled: ${GRAPHIQL_ENABLED:false}
+    schema:
+      locations: classpath:graphql/
+    path: /graphql
+
+server:
+  port: 8060
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  fastapi:
+    base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+
+logging:
+  level:
+    tz.co.dseroboadvisor: ${LOG_LEVEL:INFO}
+    org.springframework.graphql: ${LOG_LEVEL:INFO}
