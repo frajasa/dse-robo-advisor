@@ -105,6 +105,7 @@ type Subscription {
 type AuthPayload {
     token: String!
     tokenType: String!
+    refreshToken: String!
     userId: ID!
     email: String!
     fullName: String!
@@ -139,6 +140,177 @@ input GeneratePortfolioInput {
 
 # ─── Queries ─────────────────────────────────────────────────────────────────
 
+type MarketTick {
+    symbol: String!
+    name: String!
+    currentPrice: Float!
+    previousClose: Float!
+    change: Float!
+    changePct: Float!
+    volume: Int!
+    high: Float!
+    low: Float!
+    bestBidPrice: Float
+    bestAskPrice: Float
+    marketCap: Float
+    timestamp: String!
+}
+
+type MarketSnapshot {
+    ticks: [MarketTick!]!
+    indexValue: Float!
+    indexChange: Float!
+    updatedAt: String!
+}
+
+type PerformancePoint {
+    date: String!
+    value: Float!
+}
+
+type SectorAllocationPoint {
+    sector: String!
+    allocation: Float!
+}
+
+type DividendProjectionPoint {
+    month: String!
+    projected: Float!
+}
+
+type PortfolioAnalytics {
+    performanceHistory: [PerformancePoint!]!
+    sectorAllocation: [SectorAllocationPoint!]!
+    dividendProjections: [DividendProjectionPoint!]!
+    totalValue: Float!
+    totalReturn: Float!
+    totalDividendYield: Float!
+}
+
+type OrderBookEntry {
+    buyPrice: Float!
+    buyQuantity: Int!
+    sellPrice: Float!
+    sellQuantity: Int!
+}
+
+type StockDetail {
+    symbol: String!
+    companyName: String!
+    sector: String
+    currentPrice: Float
+    previousClose: Float
+    change: Float
+    changePct: Float
+    volume: Int
+    high: Float
+    low: Float
+    bestBidPrice: Float
+    bestAskPrice: Float
+    marketCap: Float
+    dividendYield: Float
+    expectedReturn: Float
+    volatility: Float
+    dseCompanyId: Int
+    orderBook: [OrderBookEntry!]
+}
+
+# ─── Simulator Types ─────────────────────────────────────────────────────────
+
+type SimulationProjectionPoint {
+    year: Int!
+    optimistic: Float!
+    expected: Float!
+    pessimistic: Float!
+}
+
+type SimulationResult {
+    projections: [SimulationProjectionPoint!]!
+    finalOptimistic: Float!
+    finalExpected: Float!
+    finalPessimistic: Float!
+    totalInvested: Float!
+    expectedProfit: Float!
+    expectedReturnPct: Float!
+    expectedAnnualReturn: Float!
+    expectedDividendIncome: Float!
+    riskTolerance: String!
+}
+
+# ─── AI Assistant Types ──────────────────────────────────────────────────────
+
+type AiResponse {
+    answer: String!
+    source: String!
+    relatedPages: [String!]!
+}
+
+input SimulationInput {
+    initialInvestment: Float!
+    monthlyContribution: Float!
+    horizonYears: Int!
+    riskTolerance: RiskTolerance!
+}
+
+# ─── Rebalancing Types ───────────────────────────────────────────────────────
+
+type RebalancingAlert {
+    symbol: String!
+    name: String!
+    action: String!
+    currentAllocation: Float!
+    targetAllocation: Float!
+    drift: Float!
+    severity: String!
+}
+
+type RebalancingResult {
+    needsRebalancing: Boolean!
+    alerts: [RebalancingAlert!]!
+    portfolioId: ID
+}
+
+# ─── Alert Types ─────────────────────────────────────────────────────────────
+
+type PriceAlert {
+    id: ID!
+    symbol: String!
+    companyName: String!
+    targetPrice: Float!
+    direction: String!
+    isTriggered: Boolean!
+    createdAt: String!
+    triggeredAt: String
+}
+
+type Notification {
+    id: ID!
+    type: String!
+    title: String!
+    message: String!
+    isRead: Boolean!
+    createdAt: String!
+}
+
+type BrokerReferral {
+    id: ID!
+    brokerName: String!
+    referralCode: String!
+    status: String!
+    commissionTzs: Float
+    referredAt: String
+    convertedAt: String
+}
+
+type Broker {
+    name: String!
+    description: String!
+    website: String!
+    commission: String!
+    logo: String!
+    affiliateUrl: String!
+}
+
 type Query {
     me: User
     myProfile: InvestorProfile
@@ -146,6 +318,16 @@ type Query {
     portfolio(id: ID!): Portfolio
     stocks: [Stock!]!
     stock(symbol: String!): Stock
+    marketSnapshot: MarketSnapshot!
+    portfolioAnalytics(portfolioId: ID!): PortfolioAnalytics
+    stockDetail(symbol: String!): StockDetail
+    simulateInvestment(input: SimulationInput!): SimulationResult!
+    askAdvisor(question: String!): AiResponse!
+    portfolioRebalancing(portfolioId: ID!): RebalancingResult!
+    myAlerts: [PriceAlert!]!
+    myNotifications: [Notification!]!
+    brokers: [Broker!]!
+    myReferrals: [BrokerReferral!]!
 }
 
 # ─── Mutations ───────────────────────────────────────────────────────────────
@@ -155,6 +337,13 @@ type Mutation {
     login(input: LoginInput!): AuthPayload!
     createProfile(input: ProfileInput!): InvestorProfile!
     updateProfile(input: ProfileInput!): InvestorProfile!
-    generatePortfolio(input: GeneratePortfolioInput!): Portfolio!
+    generatePortfolio(input: GeneratePortfolioInput!): Portfolio
     deletePortfolio(id: ID!): Boolean!
+    refreshToken(refreshToken: String!): AuthPayload!
+    upgradeSubscription(tier: String!): Subscription!
+    createReferral(brokerName: String!): BrokerReferral!
+    createPriceAlert(symbol: String!, targetPrice: Float!, direction: String!): PriceAlert!
+    deletePriceAlert(id: ID!): Boolean!
+    markNotificationRead(id: ID!): Boolean!
+    markAllNotificationsRead: Boolean!
 }

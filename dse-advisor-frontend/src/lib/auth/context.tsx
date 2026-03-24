@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useMutation, useApolloClient } from "@apollo/client/react";
-import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
+import { LOGIN_MUTATION, REGISTER_MUTATION, REFRESH_TOKEN_MUTATION } from "@/lib/graphql/mutations";
 import { useRouter } from "next/navigation";
 
 interface User {
@@ -55,15 +55,72 @@ function extractErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+// Auto-refresh 5 minutes before expiry
+const REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const apolloClient = useApolloClient();
 
-  const [loginMutation] = useMutation(LOGIN_MUTATION);
-  const [registerMutation] = useMutation(REGISTER_MUTATION);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [loginMutation] = useMutation<Record<string, any>>(LOGIN_MUTATION);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [registerMutation] = useMutation<Record<string, any>>(REGISTER_MUTATION);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [refreshTokenMutation] = useMutation<Record<string, any>>(REFRESH_TOKEN_MUTATION);
+
+  const clearRefreshTimer = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleTokenRefresh = useCallback(
+    (accessToken: string) => {
+      clearRefreshTimer();
+      const expiry = getTokenExpiry(accessToken);
+      if (!expiry) return;
+
+      const delay = expiry - Date.now() - REFRESH_BUFFER_MS;
+      if (delay <= 0) return;
+
+      refreshTimerRef.current = setTimeout(async () => {
+        const storedRefresh = localStorage.getItem("refreshToken");
+        if (!storedRefresh) return;
+
+        try {
+          const { data } = await refreshTokenMutation({
+            variables: { refreshToken: storedRefresh },
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const resp = (data as Record<string, any>)?.refreshToken;
+          if (resp?.token) {
+            localStorage.setItem("token", resp.token);
+            localStorage.setItem("refreshToken", resp.refreshToken);
+            setToken(resp.token);
+            scheduleTokenRefresh(resp.token);
+          }
+        } catch {
+          // Refresh failed — user will be logged out on next API call
+        }
+      }, delay);
+    },
+    [clearRefreshTimer, refreshTokenMutation]
+  );
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -73,13 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        scheduleTokenRefresh(storedToken);
       } catch {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("refreshToken");
       }
     }
     setLoading(false);
-  }, []);
+  }, [scheduleTokenRefresh]);
+
+  useEffect(() => {
+    return () => clearRefreshTimer();
+  }, [clearRefreshTimer]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -109,16 +172,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       localStorage.setItem("token", newToken);
+      localStorage.setItem("refreshToken", authResponse.refreshToken);
       localStorage.setItem("user", JSON.stringify(newUser));
 
       setToken(newToken);
       setUser(newUser);
+      scheduleTokenRefresh(newToken);
 
       await apolloClient.resetStore();
 
       router.push("/dashboard");
     },
-    [loginMutation, apolloClient, router]
+    [loginMutation, apolloClient, router, scheduleTokenRefresh]
   );
 
   const register = useCallback(
@@ -149,26 +214,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       localStorage.setItem("token", newToken);
+      localStorage.setItem("refreshToken", authResponse.refreshToken);
       localStorage.setItem("user", JSON.stringify(newUser));
 
       setToken(newToken);
       setUser(newUser);
+      scheduleTokenRefresh(newToken);
 
       await apolloClient.resetStore();
 
       router.push("/dashboard");
     },
-    [registerMutation, apolloClient, router]
+    [registerMutation, apolloClient, router, scheduleTokenRefresh]
   );
 
   const logout = useCallback(() => {
+    clearRefreshTimer();
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
     apolloClient.clearStore();
     router.push("/login");
-  }, [apolloClient, router]);
+  }, [apolloClient, router, clearRefreshTimer]);
 
   const value: AuthContextType = {
     user,

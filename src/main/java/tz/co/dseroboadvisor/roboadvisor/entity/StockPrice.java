@@ -38,6 +38,24 @@ public class StockPrice {
 
     private Long volume;
 
+    @Column(name = "best_bid_price")
+    private BigDecimal bestBidPrice;
+
+    @Column(name = "best_bid_qty")
+    private Long bestBidQty;
+
+    @Column(name = "best_ask_price")
+    private BigDecimal bestAskPrice;
+
+    @Column(name = "best_ask_qty")
+    private Long bestAskQty;
+
+    @Column(name = "market_cap")
+    private BigDecimal marketCap;
+
+    @Column(name = "change_pct")
+    private BigDecimal changePct;
+
     @Column(name = "price_date", nullable = false)
     private LocalDate priceDate;
 

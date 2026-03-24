@@ -36,8 +36,18 @@ build/
 .env
 .env.*
 !.env.example
+!.env.production.example
+deploy.py
 ssl/*
 !ssl/.gitkeep
+
+### Python ###
+__pycache__/
+*.pyc
+
+### JVM crash logs ###
+hs_err_pid*.log
+replay_pid*.log
 
 ### Claude ###
 .claude/

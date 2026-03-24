@@ -48,6 +48,9 @@ public class Stock {
     @Column(name = "market_cap")
     private BigDecimal marketCap;
 
+    @Column(name = "dse_company_id")
+    private Integer dseCompanyId;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 

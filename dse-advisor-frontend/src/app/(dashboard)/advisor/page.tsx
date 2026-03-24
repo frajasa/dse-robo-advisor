@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
-import { GENERATE_PORTFOLIO_MUTATION, CREATE_PROFILE_MUTATION } from "@/lib/graphql/mutations";
+import { GENERATE_PORTFOLIO_MUTATION, CREATE_PROFILE_MUTATION, UPDATE_PROFILE_MUTATION } from "@/lib/graphql/mutations";
 import { MY_PROFILE_QUERY } from "@/lib/graphql/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,10 +56,10 @@ interface PortfolioResult {
 const RISK_LEVELS = ["CONSERVATIVE", "MODERATE", "AGGRESSIVE"];
 
 const GOALS = [
-  { value: "CAPITAL_GROWTH", label: "Capital Growth" },
-  { value: "INCOME_GENERATION", label: "Income Generation" },
-  { value: "BALANCED", label: "Balanced" },
-  { value: "CAPITAL_PRESERVATION", label: "Capital Preservation" },
+  { value: "WEALTH", label: "Wealth Growth" },
+  { value: "INCOME", label: "Income Generation" },
+  { value: "RETIREMENT", label: "Retirement" },
+  { value: "EDUCATION", label: "Education" },
 ];
 
 export default function AdvisorPage() {
@@ -68,7 +68,7 @@ export default function AdvisorPage() {
   const [capitalAvailable, setCapitalAvailable] = useState("");
   const [riskTolerance, setRiskTolerance] = useState("MODERATE");
   const [investmentHorizon, setInvestmentHorizon] = useState([5]);
-  const [primaryGoal, setPrimaryGoal] = useState("BALANCED");
+  const [primaryGoal, setPrimaryGoal] = useState("WEALTH");
   const [portfolioName, setPortfolioName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PortfolioResult | null>(null);
@@ -89,24 +89,29 @@ export default function AdvisorPage() {
   }, [profileData]);
 
   const [createProfile] = useMutation(CREATE_PROFILE_MUTATION);
+  const [updateProfile] = useMutation(UPDATE_PROFILE_MUTATION);
   const [generatePortfolio, { loading: generating }] = useMutation(
     GENERATE_PORTFOLIO_MUTATION
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hasExistingProfile = !!(profileData as Record<string, any>)?.myProfile;
+
   const handleProfileSubmit = async () => {
     setError(null);
+    const profileInput = {
+      monthlyIncome: parseFloat(monthlyIncome),
+      capitalAvailable: parseFloat(capitalAvailable),
+      riskTolerance,
+      investmentHorizon: investmentHorizon[0],
+      primaryGoal,
+    };
     try {
-      await createProfile({
-        variables: {
-          input: {
-            monthlyIncome: parseFloat(monthlyIncome),
-            capitalAvailable: parseFloat(capitalAvailable),
-            riskTolerance,
-            investmentHorizon: investmentHorizon[0],
-            primaryGoal,
-          },
-        },
-      });
+      if (hasExistingProfile) {
+        await updateProfile({ variables: { input: profileInput } });
+      } else {
+        await createProfile({ variables: { input: profileInput } });
+      }
       setStep(2);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -125,9 +130,6 @@ export default function AdvisorPage() {
           input: {
             name: portfolioName,
             riskTolerance,
-            investmentHorizon: investmentHorizon[0],
-            primaryGoal,
-            capitalAvailable: parseFloat(capitalAvailable),
           },
         },
       });

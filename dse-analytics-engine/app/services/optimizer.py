@@ -2,12 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from app.core.config import settings
-from app.core.dse_data import (
-    DSE_STOCKS,
-    STOCK_SYMBOLS,
-    get_covariance_matrix,
-    get_expected_returns,
-)
+from app.core import dse_data
 from app.models.schemas import HoldingResult, OptimizationResponse
 
 # Risk-based constraints for portfolio construction
@@ -29,10 +24,15 @@ RISK_CONSTRAINTS = {
     },
 }
 
-# Index of the government bond (fixed income) in STOCK_SYMBOLS
-BOND_INDEX = STOCK_SYMBOLS.index("GOVB")
-
 RISK_FREE_RATE = settings.RISK_FREE_RATE
+
+
+def _get_bond_index() -> int | None:
+    """Get the index of the government bond in the current stock universe."""
+    try:
+        return dse_data.STOCK_SYMBOLS.index("GOVB")
+    except ValueError:
+        return None
 
 
 def _portfolio_return(weights: np.ndarray, expected_returns: np.ndarray) -> float:
@@ -62,7 +62,7 @@ def _negative_sharpe_ratio(
 
 def _generate_rationale(symbol: str, weight: float, risk_tolerance: str) -> str:
     """Generate a human-readable rationale for including a holding."""
-    stock = DSE_STOCKS[symbol]
+    stock = dse_data.DSE_STOCKS[symbol]
     sector = stock["sector"]
     div_yield = stock["dividend_yield"]
     expected_ret = stock["expected_return"]
@@ -138,12 +138,14 @@ def optimize_portfolio(
     min_bonds = constraints_config["min_bonds"]
     max_single = constraints_config["max_single"]
 
-    n_assets = len(STOCK_SYMBOLS)
-    expected_returns = get_expected_returns()
-    cov_matrix = get_covariance_matrix()
+    n_assets = len(dse_data.STOCK_SYMBOLS)
+    expected_returns = dse_data.get_expected_returns()
+    cov_matrix = dse_data.get_covariance_matrix()
+
+    bond_index = _get_bond_index()
 
     # Identify equity (non-bond) indices
-    equity_indices = [i for i in range(n_assets) if i != BOND_INDEX]
+    equity_indices = [i for i in range(n_assets) if i != bond_index]
 
     # Constraints for scipy minimize
     constraints = [
@@ -151,9 +153,13 @@ def optimize_portfolio(
         {"type": "eq", "fun": lambda w: np.sum(w) - 1.0},
         # Total equity exposure <= max_equity
         {"type": "ineq", "fun": lambda w: max_equity - sum(w[i] for i in equity_indices)},
-        # Bond allocation >= min_bonds
-        {"type": "ineq", "fun": lambda w: w[BOND_INDEX] - min_bonds},
     ]
+
+    # Bond minimum constraint only if GOVB is in the universe
+    if bond_index is not None:
+        constraints.append(
+            {"type": "ineq", "fun": lambda w, bi=bond_index: w[bi] - min_bonds},
+        )
 
     # Bounds: each weight between 0 and max_single
     bounds = tuple((0.0, max_single) for _ in range(n_assets))
@@ -187,12 +193,12 @@ def optimize_portfolio(
     holdings: list[HoldingResult] = []
     projected_dividend = 0.0
 
-    for i, symbol in enumerate(STOCK_SYMBOLS):
+    for i, symbol in enumerate(dse_data.STOCK_SYMBOLS):
         weight = optimal_weights[i]
         if weight < 0.01:
             continue
 
-        stock = DSE_STOCKS[symbol]
+        stock = dse_data.DSE_STOCKS[symbol]
         dividend_contribution = weight * stock["dividend_yield"] * investment_amount
         projected_dividend += dividend_contribution
 

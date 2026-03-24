@@ -8,11 +8,13 @@ spring:
     password: ${POSTGRES_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 20000
+      maximum-pool-size: 50
+      minimum-idle: 5
+      connection-timeout: 30000
+      leak-detection-threshold: 60000
 
   jpa:
+    defer-datasource-initialization: false
     hibernate:
       ddl-auto: validate
     properties:
@@ -35,7 +37,7 @@ spring:
 
   graphql:
     graphiql:
-      enabled: ${GRAPHIQL_ENABLED:false}
+      enabled: ${GRAPHIQL_ENABLED:true}
     schema:
       locations: classpath:graphql/
     path: /graphql
@@ -45,8 +47,9 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   fastapi:
     base-url: ${FASTAPI_BASE_URL:http://localhost:8000}
   cors:
@@ -54,5 +57,16 @@ app:
 
 logging:
   level:
-    tz.co.dseroboadvisor: ${LOG_LEVEL:INFO}
-    org.springframework.graphql: ${LOG_LEVEL:INFO}
+    tz.co.dseroboadvisor: ${LOG_LEVEL:DEBUG}
+    org.springframework.graphql: ${LOG_LEVEL:DEBUG}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,caches
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true

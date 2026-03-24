@@ -123,12 +123,12 @@ public class PortfolioService {
 
     @Transactional(readOnly = true)
     public List<Portfolio> getUserPortfolios(UUID userId) {
-        return portfolioRepository.findByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId);
+        return portfolioRepository.findByUserIdAndIsActiveTrueWithHoldings(userId);
     }
 
     @Transactional(readOnly = true)
     public Optional<Portfolio> getPortfolioById(UUID id) {
-        return portfolioRepository.findById(id);
+        return portfolioRepository.findByIdWithHoldings(id);
     }
 
     @Transactional

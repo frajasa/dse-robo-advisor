@@ -40,4 +40,9 @@ public class AuthController {
 
         return authService.login(request);
     }
+
+    @MutationMapping
+    public AuthResponse refreshToken(@Argument String refreshToken) {
+        return authService.refreshToken(refreshToken);
+    }
 }

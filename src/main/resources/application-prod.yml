@@ -1,0 +1,20 @@
+spring:
+  graphql:
+    graphiql:
+      enabled: false
+
+  jpa:
+    show-sql: false
+
+server:
+  compression:
+    enabled: true
+    mime-types: application/json,application/graphql-response+json,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+
+logging:
+  level:
+    tz.co.dseroboadvisor: INFO
+    org.springframework.graphql: WARN
+    org.springframework.web: WARN
+    org.hibernate: WARN

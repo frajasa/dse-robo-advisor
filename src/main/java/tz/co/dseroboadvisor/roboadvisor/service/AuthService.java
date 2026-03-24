@@ -80,9 +80,10 @@ public class AuthService {
         );
 
         String token = jwtTokenProvider.generateToken(authentication);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
 
         logger.info("New user registered: {}", user.getId());
-        return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName());
+        return new AuthResponse(token, refreshToken, user.getId(), user.getEmail(), user.getFullName());
     }
 
     @Transactional(readOnly = true)
@@ -97,11 +98,33 @@ public class AuthService {
             User user = userRepository.findByEmail(request.email())
                     .orElseThrow(() -> new ResourceNotFoundException("User", request.email()));
 
+            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
+
             logger.info("User logged in: {}", user.getId());
-            return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName());
+            return new AuthResponse(token, refreshToken, user.getId(), user.getEmail(), user.getFullName());
         } catch (BadCredentialsException e) {
             logger.warn("Failed login attempt for email: {}", request.email());
             throw new InvalidInputException("Invalid email or password");
         }
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new InvalidInputException("Invalid or expired refresh token");
+        }
+
+        String email = jwtTokenProvider.getUserEmailFromToken(refreshToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+
+        if (!user.getIsActive()) {
+            throw new InvalidInputException("Account is deactivated");
+        }
+
+        String newAccessToken = jwtTokenProvider.generateTokenFromEmail(email);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+        logger.info("Token refreshed for user: {}", user.getId());
+        return new AuthResponse(newAccessToken, newRefreshToken, user.getId(), user.getEmail(), user.getFullName());
     }
 }

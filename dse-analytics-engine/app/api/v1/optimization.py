@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.core.dse_data import DSE_STOCKS
+from app.core import dse_data
 from app.models.schemas import OptimizationRequest, OptimizationResponse
 from app.services.optimizer import optimize_portfolio
 
@@ -40,7 +40,7 @@ async def run_optimization(request: OptimizationRequest) -> OptimizationResponse
 async def list_stocks() -> list[dict]:
     """Return the list of available DSE stocks with their fundamental data."""
     stocks = []
-    for symbol, data in DSE_STOCKS.items():
+    for symbol, data in dse_data.DSE_STOCKS.items():
         stocks.append({
             "symbol": symbol,
             "name": data["name"],
