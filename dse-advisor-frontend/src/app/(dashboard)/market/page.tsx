@@ -45,7 +45,12 @@ export default function MarketPage() {
   const { prices, connected } = useMarketFeed(ALL_SYMBOLS);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stocks: Stock[] = (data as Record<string, any>)?.stocks || [];
+  const allStocks: Stock[] = (data as Record<string, any>)?.stocks || [];
+  // Filter out stocks without price data (live ticks or market cap from DB)
+  const hasTicks = Object.keys(prices).length > 0;
+  const stocks = hasTicks
+    ? allStocks.filter((s) => prices[s.symbol])
+    : allStocks.filter((s) => s.marketCap && s.marketCap > 0);
 
   // Compute market summary from live ticks
   const ticks = Object.values(prices);
