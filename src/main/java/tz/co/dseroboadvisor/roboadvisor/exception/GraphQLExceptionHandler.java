@@ -44,8 +44,17 @@ public class GraphQLExceptionHandler {
     public GraphQLError handleAccessDenied(AccessDeniedException ex, DataFetchingEnvironment env) {
         logger.warn("Access denied: {} for operation: {}", ex.getMessage(), env.getField().getName());
         return GraphQLError.newError()
-                .errorType(ErrorType.FORBIDDEN)
-                .message(ex.getMessage())
+                .errorType(ErrorType.UNAUTHORIZED)
+                .message("Authentication required")
+                .build();
+    }
+
+    @GraphQlExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    public GraphQLError handleAuthorizationDenied(org.springframework.security.authorization.AuthorizationDeniedException ex, DataFetchingEnvironment env) {
+        logger.warn("Authorization denied: {} for operation: {}", ex.getMessage(), env.getField().getName());
+        return GraphQLError.newError()
+                .errorType(ErrorType.UNAUTHORIZED)
+                .message("Authentication required")
                 .build();
     }
 
