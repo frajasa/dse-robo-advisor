@@ -32,8 +32,8 @@ public class MarketDataSyncJob {
         try {
             boolean marketOpen = isMarketOpen();
 
-            // During market hours: broadcast every 30s
-            // Outside market hours: broadcast last known data every 5 minutes
+            // During market hours: fetch LIVE from DSE API every 30s
+            // Outside market hours: broadcast DB data every 5 minutes
             if (!marketOpen) {
                 long now = System.currentTimeMillis();
                 if (now - lastOffHoursBroadcast < 300_000) {
@@ -42,10 +42,16 @@ public class MarketDataSyncJob {
                 lastOffHoursBroadcast = now;
             }
 
-            List<MarketTickDTO> latestPrices = marketDataService.getLatestPrices();
+            List<MarketTickDTO> latestPrices = marketOpen
+                    ? marketDataService.getLivePrices()
+                    : marketDataService.getLatestPrices();
+
             if (!latestPrices.isEmpty()) {
                 tickerHandler.broadcastLatestPrices(latestPrices);
-                logger.info("Broadcast {} price updates (market {})", latestPrices.size(), marketOpen ? "open" : "closed");
+                logger.info("Broadcast {} price updates (market {}, source: {})",
+                        latestPrices.size(),
+                        marketOpen ? "open" : "closed",
+                        marketOpen ? "DSE API" : "database");
             }
         } catch (Exception e) {
             logger.error("Market data sync failed: {}", e.getMessage());

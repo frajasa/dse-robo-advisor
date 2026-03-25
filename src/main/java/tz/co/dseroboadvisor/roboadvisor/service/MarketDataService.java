@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import tz.co.dseroboadvisor.roboadvisor.client.DseMarketClient;
 import tz.co.dseroboadvisor.roboadvisor.dto.market.MarketSnapshotDTO;
 import tz.co.dseroboadvisor.roboadvisor.dto.market.MarketTickDTO;
 import tz.co.dseroboadvisor.roboadvisor.entity.StockPrice;
@@ -27,13 +28,16 @@ public class MarketDataService {
     private final StockRepository stockRepository;
     private final StockPriceRepository stockPriceRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final DseMarketClient dseMarketClient;
 
     public MarketDataService(StockRepository stockRepository,
                              StockPriceRepository stockPriceRepository,
-                             RedisTemplate<String, Object> redisTemplate) {
+                             RedisTemplate<String, Object> redisTemplate,
+                             DseMarketClient dseMarketClient) {
         this.stockRepository = stockRepository;
         this.stockPriceRepository = stockPriceRepository;
         this.redisTemplate = redisTemplate;
+        this.dseMarketClient = dseMarketClient;
     }
 
     public List<MarketTickDTO> getLatestPrices() {
@@ -95,6 +99,37 @@ public class MarketDataService {
 
         logger.info("Broadcast {} price updates in single batch query", ticks.size());
         return ticks;
+    }
+
+    /**
+     * Fetch live market data directly from the DSE API.
+     * Falls back to database prices if the API call fails.
+     */
+    public List<MarketTickDTO> getLivePrices() {
+        List<MarketTickDTO> liveTicks = dseMarketClient.fetchLiveMarketData();
+        if (!liveTicks.isEmpty()) {
+            // Cache live data in Redis
+            try {
+                Map<String, Object> cacheEntries = new HashMap<>();
+                for (MarketTickDTO tick : liveTicks) {
+                    cacheEntries.put(PRICE_KEY_PREFIX + tick.symbol(), tick);
+                }
+                if (!cacheEntries.isEmpty()) {
+                    redisTemplate.opsForValue().multiSet(cacheEntries);
+                    for (String key : cacheEntries.keySet()) {
+                        redisTemplate.expire(key, Duration.ofSeconds(60));
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to cache live prices: {}", e.getMessage());
+            }
+            logger.info("Serving {} live prices from DSE API", liveTicks.size());
+            return liveTicks;
+        }
+
+        // Fallback to database if DSE API is unavailable
+        logger.warn("DSE API unavailable, falling back to database prices");
+        return getLatestPrices();
     }
 
     @Cacheable("marketSnapshot")

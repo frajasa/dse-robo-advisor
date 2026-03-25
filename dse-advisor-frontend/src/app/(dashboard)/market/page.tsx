@@ -7,7 +7,7 @@ import { STOCKS_QUERY } from "@/lib/graphql/queries";
 import { MarketTicker } from "@/components/market/MarketTicker";
 import { useMarketFeed } from "@/hooks/useMarketFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2, BarChart3, DollarSign, Activity, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Stock {
@@ -18,6 +18,7 @@ interface Stock {
   expectedReturn: number;
   volatility: number;
   dividendYield: number;
+  marketCap: number | null;
 }
 
 const ALL_SYMBOLS = [
@@ -42,7 +43,7 @@ function formatMarketCap(value: number | null | undefined) {
 export default function MarketPage() {
   const router = useRouter();
   const { data, loading, error } = useQuery(STOCKS_QUERY);
-  const { prices, connected } = useMarketFeed(ALL_SYMBOLS);
+  const { prices, connected, lastUpdated } = useMarketFeed(ALL_SYMBOLS);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allStocks: Stock[] = (data as Record<string, any>)?.stocks || [];
@@ -62,11 +63,21 @@ export default function MarketPage() {
 
   return (
     <div className="space-y-6">
-      <div className="animate-fade-in">
-        <h1 className="text-xl font-bold text-white sm:text-2xl md:text-3xl">Market Overview</h1>
-        <p className="text-xs text-zinc-400 sm:text-sm">
-          Live DSE market data from the official Dar es Salaam Stock Exchange
-        </p>
+      <div className="animate-fade-in flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white sm:text-2xl md:text-3xl">Market Overview</h1>
+          <p className="text-xs text-zinc-400 sm:text-sm">
+            Live DSE market data from the official Dar es Salaam Stock Exchange
+          </p>
+        </div>
+        {lastUpdated && (
+          <div className="flex items-center gap-2 rounded-lg bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-400">
+            <RefreshCw className={cn("h-3 w-3", connected ? "animate-spin text-green-400" : "text-red-400")} style={{ animationDuration: "3s" }} />
+            <span>
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          </div>
+        )}
       </div>
 
       <MarketTicker />
@@ -122,7 +133,7 @@ export default function MarketPage() {
               <div className="min-w-0">
                 <p className="text-xs text-zinc-400">Connection</p>
                 <p className="text-lg font-bold text-white sm:text-xl">{connected ? "Live" : "Offline"}</p>
-                <p className="text-[10px] sm:text-xs text-zinc-500">WebSocket feed</p>
+                <p className="text-[10px] sm:text-xs text-zinc-500">{connected ? "Auto-refresh every 30s" : "Reconnecting..."}</p>
               </div>
             </CardContent>
           </Card>

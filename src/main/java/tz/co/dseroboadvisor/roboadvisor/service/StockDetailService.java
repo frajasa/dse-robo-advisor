@@ -3,10 +3,11 @@ package tz.co.dseroboadvisor.roboadvisor.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import tz.co.dseroboadvisor.roboadvisor.client.DseMarketClient;
+import tz.co.dseroboadvisor.roboadvisor.dto.market.MarketTickDTO;
 import tz.co.dseroboadvisor.roboadvisor.dto.market.OrderBookEntryDTO;
 import tz.co.dseroboadvisor.roboadvisor.dto.market.StockDetailDTO;
 import tz.co.dseroboadvisor.roboadvisor.entity.Stock;
@@ -26,47 +27,79 @@ public class StockDetailService {
 
     private final StockRepository stockRepository;
     private final StockPriceRepository stockPriceRepository;
+    private final DseMarketClient dseMarketClient;
     private final WebClient webClient;
 
     public StockDetailService(StockRepository stockRepository,
                                StockPriceRepository stockPriceRepository,
+                               DseMarketClient dseMarketClient,
                                @Value("${app.fastapi.base-url}") String fastapiBaseUrl) {
         this.stockRepository = stockRepository;
         this.stockPriceRepository = stockPriceRepository;
+        this.dseMarketClient = dseMarketClient;
         this.webClient = WebClient.builder().baseUrl(fastapiBaseUrl).build();
     }
 
-    @Cacheable(value = "stockDetail", key = "#symbol")
     public StockDetailDTO getStockDetail(String symbol) {
         Stock stock = stockRepository.findBySymbol(symbol.toUpperCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Stock", symbol));
 
-        StockPrice latestPrice = stockPriceRepository
-                .findTopBySymbolOrderByPriceDateDesc(symbol.toUpperCase())
-                .orElse(null);
+        // Try live DSE API data first
+        MarketTickDTO liveTick = findLiveTick(symbol.toUpperCase());
 
-        Double currentPrice = latestPrice != null && latestPrice.getClosePrice() != null
-                ? latestPrice.getClosePrice().doubleValue() : null;
-        Double previousClose = latestPrice != null && latestPrice.getOpenPrice() != null
-                ? latestPrice.getOpenPrice().doubleValue() : null;
-        Double high = latestPrice != null && latestPrice.getHighPrice() != null
-                ? latestPrice.getHighPrice().doubleValue() : null;
-        Double low = latestPrice != null && latestPrice.getLowPrice() != null
-                ? latestPrice.getLowPrice().doubleValue() : null;
-        Double bidPrice = latestPrice != null && latestPrice.getBestBidPrice() != null
-                ? latestPrice.getBestBidPrice().doubleValue() : null;
-        Double askPrice = latestPrice != null && latestPrice.getBestAskPrice() != null
-                ? latestPrice.getBestAskPrice().doubleValue() : null;
-        Double marketCap = latestPrice != null && latestPrice.getMarketCap() != null
-                ? latestPrice.getMarketCap().doubleValue() : null;
-        Long volume = latestPrice != null && latestPrice.getVolume() != null
-                ? latestPrice.getVolume() : null;
+        Double currentPrice;
+        Double previousClose;
+        Double high;
+        Double low;
+        Double bidPrice;
+        Double askPrice;
+        Double marketCap;
+        Long volume;
+        double change;
+        double changePct;
 
-        double change = 0;
-        double changePct = 0;
-        if (currentPrice != null && previousClose != null && previousClose > 0) {
-            change = currentPrice - previousClose;
-            changePct = (change / previousClose) * 100;
+        if (liveTick != null) {
+            currentPrice = liveTick.currentPrice();
+            previousClose = liveTick.previousClose();
+            high = liveTick.high();
+            low = liveTick.low();
+            bidPrice = liveTick.bestBidPrice();
+            askPrice = liveTick.bestAskPrice();
+            marketCap = liveTick.marketCap();
+            volume = liveTick.volume();
+            change = liveTick.change();
+            changePct = liveTick.changePct();
+            logger.info("Stock detail for {} served from live DSE API", symbol);
+        } else {
+            // Fallback to database
+            StockPrice latestPrice = stockPriceRepository
+                    .findTopBySymbolOrderByPriceDateDesc(symbol.toUpperCase())
+                    .orElse(null);
+
+            currentPrice = latestPrice != null && latestPrice.getClosePrice() != null
+                    ? latestPrice.getClosePrice().doubleValue() : null;
+            previousClose = latestPrice != null && latestPrice.getOpenPrice() != null
+                    ? latestPrice.getOpenPrice().doubleValue() : null;
+            high = latestPrice != null && latestPrice.getHighPrice() != null
+                    ? latestPrice.getHighPrice().doubleValue() : null;
+            low = latestPrice != null && latestPrice.getLowPrice() != null
+                    ? latestPrice.getLowPrice().doubleValue() : null;
+            bidPrice = latestPrice != null && latestPrice.getBestBidPrice() != null
+                    ? latestPrice.getBestBidPrice().doubleValue() : null;
+            askPrice = latestPrice != null && latestPrice.getBestAskPrice() != null
+                    ? latestPrice.getBestAskPrice().doubleValue() : null;
+            marketCap = latestPrice != null && latestPrice.getMarketCap() != null
+                    ? latestPrice.getMarketCap().doubleValue() : null;
+            volume = latestPrice != null && latestPrice.getVolume() != null
+                    ? latestPrice.getVolume() : null;
+
+            change = 0;
+            changePct = 0;
+            if (currentPrice != null && previousClose != null && previousClose > 0) {
+                change = currentPrice - previousClose;
+                changePct = (change / previousClose) * 100;
+            }
+            logger.info("Stock detail for {} served from database (API unavailable)", symbol);
         }
 
         // Fetch order book from analytics engine if dseCompanyId is available
@@ -95,6 +128,19 @@ public class StockDetailService {
                 stock.getDseCompanyId(),
                 orderBook
         );
+    }
+
+    private MarketTickDTO findLiveTick(String symbol) {
+        try {
+            List<MarketTickDTO> ticks = dseMarketClient.fetchLiveMarketData();
+            return ticks.stream()
+                    .filter(t -> t.symbol().equalsIgnoreCase(symbol))
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            logger.warn("Failed to get live tick for {}: {}", symbol, e.getMessage());
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")

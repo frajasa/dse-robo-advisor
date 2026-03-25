@@ -23,6 +23,7 @@ export interface MarketTick {
 export function useMarketFeed(symbols: string[]) {
   const [prices, setPrices] = useState<Record<string, MarketTick>>({});
   const [connected, setConnected] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const clientRef = useRef<Client | null>(null);
   const symbolsKey = symbols.join(",");
 
@@ -42,11 +43,13 @@ export function useMarketFeed(symbols: string[]) {
             map[t.symbol] = t;
           });
           setPrices(map);
+          setLastUpdated(new Date());
         });
         symbols.forEach((symbol) => {
           client.subscribe(`/topic/market/${symbol}`, (msg: IMessage) => {
             const tick: MarketTick = JSON.parse(msg.body);
             setPrices((prev) => ({ ...prev, [symbol]: tick }));
+            setLastUpdated(new Date());
           });
         });
       },
@@ -69,5 +72,5 @@ export function useMarketFeed(symbols: string[]) {
     return cleanup;
   }, [connect]);
 
-  return { prices, connected };
+  return { prices, connected, lastUpdated };
 }
