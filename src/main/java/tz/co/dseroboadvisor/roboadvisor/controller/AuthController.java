@@ -22,10 +22,8 @@ public class AuthController {
     @MutationMapping
     public AuthResponse register(@Argument Map<String, Object> input) {
         RegisterRequest request = new RegisterRequest(
-                (String) input.get("email"),
-                (String) input.get("password"),
-                (String) input.get("fullName"),
-                (String) input.get("phone")
+                (String) input.get("nickname"),
+                (String) input.get("password")
         );
 
         return authService.register(request);
@@ -34,7 +32,7 @@ public class AuthController {
     @MutationMapping
     public AuthResponse login(@Argument Map<String, Object> input) {
         LoginRequest request = new LoginRequest(
-                (String) input.get("email"),
+                (String) input.get("nickname"),
                 (String) input.get("password")
         );
 

@@ -22,13 +22,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+    public UserDetails loadUserByUsername(String nickname) throws UsernameNotFoundException {
+        User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UsernameNotFoundException(
-                        "User not found with email: " + email));
+                        "User not found with nickname: " + nickname));
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
+                user.getNickname(),
                 user.getPasswordHash(),
                 user.getIsActive(),
                 true,

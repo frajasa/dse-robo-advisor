@@ -75,17 +75,9 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-zinc-300">Full Name</Label>
+              <Label className="text-zinc-300">Nickname</Label>
               <Input
-                value={user?.fullName || ""}
-                disabled
-                className="border-zinc-700 bg-zinc-800 text-zinc-300"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-300">Email</Label>
-              <Input
-                value={user?.email || ""}
+                value={user?.nickname || ""}
                 disabled
                 className="border-zinc-700 bg-zinc-800 text-zinc-300"
               />

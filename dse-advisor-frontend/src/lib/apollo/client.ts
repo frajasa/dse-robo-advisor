@@ -29,7 +29,7 @@ async function attemptTokenRefresh(): Promise<string | null> {
       body: JSON.stringify({
         query: `mutation RefreshToken($refreshToken: String!) {
           refreshToken(refreshToken: $refreshToken) {
-            token refreshToken userId email fullName
+            token refreshToken userId nickname
           }
         }`,
         variables: { refreshToken },

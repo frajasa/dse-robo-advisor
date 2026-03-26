@@ -6,11 +6,11 @@ import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, ArrowRight } from "lucide-react";
+import { Loader2, Lock, User, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,12 +21,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(nickname, password);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || "Invalid email or password");
+        setError(err.message || "Invalid nickname or password");
       } else {
-        setError("Invalid email or password");
+        setError("Invalid nickname or password");
       }
     } finally {
       setIsLoading(false);
@@ -56,19 +56,19 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email field */}
+          {/* Nickname field */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-zinc-300">
-              Email address
+            <Label htmlFor="nickname" className="text-sm font-medium text-zinc-300">
+              Nickname
             </Label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="nickname"
+                type="text"
+                placeholder="Enter your nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
                 required
                 className="h-11 border-white/[0.08] bg-white/[0.04] pl-10 text-white placeholder:text-zinc-500 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/20"
               />
@@ -77,17 +77,9 @@ export default function LoginPage() {
 
           {/* Password field */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sm font-medium text-zinc-300">
-                Password
-              </Label>
-              <button
-                type="button"
-                className="text-xs font-medium text-amber-400/80 transition-colors hover:text-amber-400"
-              >
-                Forgot password?
-              </button>
-            </div>
+            <Label htmlFor="password" className="text-sm font-medium text-zinc-300">
+              Password
+            </Label>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <Input

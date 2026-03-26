@@ -110,8 +110,8 @@ public class PortfolioController {
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        return userRepository.findByEmail(email)
+        String nickname = authentication.getName();
+        return userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "current"));
     }
 

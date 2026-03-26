@@ -40,8 +40,8 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
                 String token = authHeader.substring(7);
 
                 if (jwtTokenProvider.validateToken(token)) {
-                    String email = jwtTokenProvider.getUserEmailFromToken(token);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    String nickname = jwtTokenProvider.getNicknameFromToken(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(nickname);
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
@@ -50,7 +50,7 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     accessor.setUser(authentication);
 
-                    logger.debug("WebSocket authenticated for user: {}", email);
+                    logger.debug("WebSocket authenticated for user: {}", nickname);
                 } else {
                     logger.warn("Invalid JWT token in WebSocket CONNECT");
                 }

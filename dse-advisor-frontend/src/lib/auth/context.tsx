@@ -7,8 +7,7 @@ import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
-  email: string;
-  fullName: string;
+  nickname: string;
 }
 
 interface AuthContextType {
@@ -16,8 +15,8 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string, phone: string) => Promise<void>;
+  login: (nickname: string, password: string) => Promise<void>;
+  register: (nickname: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -145,17 +144,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearRefreshTimer]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (nickname: string, password: string) => {
       let data;
       try {
         const result = await loginMutation({
           variables: {
-            input: { email, password },
+            input: { nickname, password },
           },
         });
         data = result.data;
       } catch (err: unknown) {
-        throw new Error(extractErrorMessage(err, "Invalid email or password"));
+        throw new Error(extractErrorMessage(err, "Invalid nickname or password"));
       }
 
       if (!data?.login?.token) {
@@ -167,8 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const newToken = authResponse.token;
       const newUser: User = {
         id: authResponse.userId,
-        email: authResponse.email,
-        fullName: authResponse.fullName,
+        nickname: authResponse.nickname,
       };
 
       localStorage.setItem("token", newToken);
@@ -187,12 +185,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, fullName: string, phone: string) => {
+    async (nickname: string, password: string) => {
       let data;
       try {
         const result = await registerMutation({
           variables: {
-            input: { email, password, fullName, phone },
+            input: { nickname, password },
           },
         });
         data = result.data;
@@ -209,8 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const newToken = authResponse.token;
       const newUser: User = {
         id: authResponse.userId,
-        email: authResponse.email,
-        fullName: authResponse.fullName,
+        nickname: authResponse.nickname,
       };
 
       localStorage.setItem("token", newToken);

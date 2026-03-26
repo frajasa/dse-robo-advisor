@@ -7,8 +7,7 @@ export const REGISTER_MUTATION = gql`
       tokenType
       refreshToken
       userId
-      email
-      fullName
+      nickname
     }
   }
 `;
@@ -20,8 +19,7 @@ export const LOGIN_MUTATION = gql`
       tokenType
       refreshToken
       userId
-      email
-      fullName
+      nickname
     }
   }
 `;
@@ -140,8 +138,7 @@ export const REFRESH_TOKEN_MUTATION = gql`
       tokenType
       refreshToken
       userId
-      email
-      fullName
+      nickname
     }
   }
 `;

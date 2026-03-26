@@ -33,9 +33,9 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public User me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
+        String nickname = authentication.getName();
 
-        return userRepository.findByEmail(email)
+        return userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "current"));
     }
 

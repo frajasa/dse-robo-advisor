@@ -6,13 +6,11 @@ import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, User, Phone, ArrowRight } from "lucide-react";
+import { Loader2, Lock, User, ArrowRight, ShieldCheck } from "lucide-react";
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +21,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password, fullName, phone);
+      await register(nickname, password);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Registration failed. Please try again.");
@@ -49,6 +47,14 @@ export default function RegisterPage() {
           </p>
         </div>
 
+        {/* Privacy notice */}
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+          <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" />
+          <p className="text-xs leading-relaxed text-emerald-300/90">
+            <span className="font-semibold">Privacy-first:</span> We only store your nickname and password. No email, no personal data. Compliant with Tanzania PDPC data protection guidelines.
+          </p>
+        </div>
+
         {/* Error message */}
         {error && (
           <div className="mb-6 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -58,61 +64,27 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Full Name field */}
+          {/* Nickname field */}
           <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-sm font-medium text-zinc-300">
-              Full Name
+            <Label htmlFor="nickname" className="text-sm font-medium text-zinc-300">
+              Nickname
             </Label>
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <Input
-                id="fullName"
+                id="nickname"
                 type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Choose a unique nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
                 required
+                minLength={3}
+                maxLength={50}
+                pattern="^[a-zA-Z0-9_]+$"
                 className="h-11 border-white/[0.08] bg-white/[0.04] pl-10 text-white placeholder:text-zinc-500 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/20"
               />
             </div>
-          </div>
-
-          {/* Email field */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-zinc-300">
-              Email address
-            </Label>
-            <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 border-white/[0.08] bg-white/[0.04] pl-10 text-white placeholder:text-zinc-500 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/20"
-              />
-            </div>
-          </div>
-
-          {/* Phone field */}
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-medium text-zinc-300">
-              Phone Number
-            </Label>
-            <div className="relative">
-              <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+255 7XX XXX XXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                className="h-11 border-white/[0.08] bg-white/[0.04] pl-10 text-white placeholder:text-zinc-500 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/20"
-              />
-            </div>
+            <p className="text-xs text-zinc-500">Letters, numbers, and underscores only</p>
           </div>
 
           {/* Password field */}

@@ -20,16 +20,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(nullable = false, unique = true, length = 50)
+    private String nickname;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
-
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
-    private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

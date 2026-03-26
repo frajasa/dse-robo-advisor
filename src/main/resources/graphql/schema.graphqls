@@ -23,9 +23,7 @@ enum SubscriptionTier {
 
 type User {
     id: ID!
-    email: String!
-    fullName: String!
-    phone: String
+    nickname: String!
     role: String!
     isActive: Boolean!
     createdAt: String
@@ -107,21 +105,18 @@ type AuthPayload {
     tokenType: String!
     refreshToken: String!
     userId: ID!
-    email: String!
-    fullName: String!
+    nickname: String!
 }
 
 # ─── Inputs ──────────────────────────────────────────────────────────────────
 
 input RegisterInput {
-    email: String!
+    nickname: String!
     password: String!
-    fullName: String!
-    phone: String
 }
 
 input LoginInput {
-    email: String!
+    nickname: String!
     password: String!
 }
 

@@ -7,10 +7,9 @@ public record AuthResponse(
         String tokenType,
         String refreshToken,
         UUID userId,
-        String email,
-        String fullName
+        String nickname
 ) {
-    public AuthResponse(String token, String refreshToken, UUID userId, String email, String fullName) {
-        this(token, "Bearer", refreshToken, userId, email, fullName);
+    public AuthResponse(String token, String refreshToken, UUID userId, String nickname) {
+        this(token, "Bearer", refreshToken, userId, nickname);
     }
 }

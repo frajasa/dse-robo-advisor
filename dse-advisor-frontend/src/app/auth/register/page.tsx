@@ -7,9 +7,7 @@ import { Loader2, Eye, EyeOff, TrendingUp } from "lucide-react";
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +30,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(email, password, fullName, phone);
+      await register(nickname, password);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -72,49 +70,19 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="fullName" className="block text-sm font-medium text-zinc-300">
-                Full name
+              <label htmlFor="nickname" className="block text-sm font-medium text-zinc-300">
+                Nickname
               </label>
               <input
-                id="fullName"
+                id="nickname"
                 type="text"
                 required
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-300">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="phone" className="block text-sm font-medium text-zinc-300">
-                Phone number
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                required
-                autoComplete="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+255 7XX XXX XXX"
+                minLength={3}
+                maxLength={50}
+                pattern="^[a-zA-Z0-9_]+$"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="Choose a unique nickname"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
               />
             </div>

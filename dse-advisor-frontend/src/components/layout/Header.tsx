@@ -36,7 +36,7 @@ export function Header() {
             <User className="h-4 w-4 text-zinc-400" />
           </div>
           <span className="max-w-[120px] truncate text-sm text-zinc-300">
-            {user?.fullName}
+            {user?.nickname}
           </span>
         </div>
 

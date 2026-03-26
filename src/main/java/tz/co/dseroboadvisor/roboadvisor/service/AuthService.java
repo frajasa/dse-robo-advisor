@@ -48,8 +48,8 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateResourceException("An account with this email already exists");
+        if (userRepository.existsByNickname(request.nickname())) {
+            throw new DuplicateResourceException("This nickname is already taken");
         }
 
         if (request.password() == null || request.password().length() < 8) {
@@ -57,10 +57,8 @@ public class AuthService {
         }
 
         User user = User.builder()
-                .email(request.email())
+                .nickname(request.nickname())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .fullName(request.fullName())
-                .phone(request.phone())
                 .role(UserRole.USER)
                 .isActive(true)
                 .build();
@@ -76,35 +74,35 @@ public class AuthService {
         subscriptionRepository.save(subscription);
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                new UsernamePasswordAuthenticationToken(request.nickname(), request.password())
         );
 
         String token = jwtTokenProvider.generateToken(authentication);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getNickname());
 
         logger.info("New user registered: {}", user.getId());
-        return new AuthResponse(token, refreshToken, user.getId(), user.getEmail(), user.getFullName());
+        return new AuthResponse(token, refreshToken, user.getId(), user.getNickname());
     }
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                    new UsernamePasswordAuthenticationToken(request.nickname(), request.password())
             );
 
             String token = jwtTokenProvider.generateToken(authentication);
 
-            User user = userRepository.findByEmail(request.email())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", request.email()));
+            User user = userRepository.findByNickname(request.nickname())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", request.nickname()));
 
-            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
+            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getNickname());
 
             logger.info("User logged in: {}", user.getId());
-            return new AuthResponse(token, refreshToken, user.getId(), user.getEmail(), user.getFullName());
+            return new AuthResponse(token, refreshToken, user.getId(), user.getNickname());
         } catch (BadCredentialsException e) {
-            logger.warn("Failed login attempt for email: {}", request.email());
-            throw new InvalidInputException("Invalid email or password");
+            logger.warn("Failed login attempt for nickname: {}", request.nickname());
+            throw new InvalidInputException("Invalid nickname or password");
         }
     }
 
@@ -113,18 +111,18 @@ public class AuthService {
             throw new InvalidInputException("Invalid or expired refresh token");
         }
 
-        String email = jwtTokenProvider.getUserEmailFromToken(refreshToken);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+        String nickname = jwtTokenProvider.getNicknameFromToken(refreshToken);
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new ResourceNotFoundException("User", nickname));
 
         if (!user.getIsActive()) {
             throw new InvalidInputException("Account is deactivated");
         }
 
-        String newAccessToken = jwtTokenProvider.generateTokenFromEmail(email);
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+        String newAccessToken = jwtTokenProvider.generateTokenFromNickname(nickname);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(nickname);
 
         logger.info("Token refreshed for user: {}", user.getId());
-        return new AuthResponse(newAccessToken, newRefreshToken, user.getId(), user.getEmail(), user.getFullName());
+        return new AuthResponse(newAccessToken, newRefreshToken, user.getId(), user.getNickname());
     }
 }

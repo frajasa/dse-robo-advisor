@@ -42,27 +42,27 @@ public class JwtTokenProvider {
 
     public String generateToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return generateTokenFromEmail(userDetails.getUsername());
+        return generateTokenFromNickname(userDetails.getUsername());
     }
 
-    public String generateTokenFromEmail(String email) {
+    public String generateTokenFromNickname(String nickname) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .subject(email)
+                .subject(nickname)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(String nickname) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
 
         return Jwts.builder()
-                .subject(email)
+                .subject(nickname)
                 .id(UUID.randomUUID().toString())
                 .claim("type", "refresh")
                 .issuedAt(now)
@@ -71,7 +71,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String getUserEmailFromToken(String token) {
+    public String getNicknameFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(key)
                 .build()
