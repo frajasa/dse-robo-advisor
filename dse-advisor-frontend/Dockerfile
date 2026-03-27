@@ -9,7 +9,8 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 COPY . .
 ENV NEXT_PUBLIC_GRAPHQL_URL=/graphql
 ENV NEXT_PUBLIC_WS_URL=/ws
-RUN mkdir -p public && npm run build
+RUN mkdir -p public && npm run build && \
+    mkdir -p .next/static
 
 FROM node:20-alpine AS runner
 WORKDIR /app
