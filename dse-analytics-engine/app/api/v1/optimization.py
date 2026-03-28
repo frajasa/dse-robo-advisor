@@ -26,6 +26,8 @@ async def run_optimization(request: OptimizationRequest) -> OptimizationResponse
         result = optimize_portfolio(
             risk_tolerance=request.risk_tolerance,
             investment_amount=request.investment_amount,
+            investment_horizon=request.investment_horizon,
+            primary_goal=request.primary_goal,
         )
     except Exception as e:
         raise HTTPException(

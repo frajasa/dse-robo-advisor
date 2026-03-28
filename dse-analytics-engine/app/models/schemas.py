@@ -16,8 +16,15 @@ class OptimizationRequest(BaseModel):
     )
     primary_goal: Optional[str] = Field(
         default=None,
-        description="Primary investment goal, e.g. 'growth', 'income', 'balanced'",
-        examples=["balanced"],
+        description="Primary investment goal: 'wealth', 'income', 'retirement', 'education'",
+        examples=["wealth"],
+    )
+    investment_horizon: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=30,
+        description="Investment horizon in years",
+        examples=[10],
     )
 
 
@@ -42,6 +49,14 @@ class OptimizationResponse(BaseModel):
     projected_dividend: Optional[float] = Field(
         default=None,
         description="Projected annual dividend income in TZS",
+    )
+    market_regime: Optional[str] = Field(
+        default=None,
+        description="Current market regime: NORMAL, BULL, BEAR, HIGH_VOLATILITY, CRISIS",
+    )
+    regime_adjustments: Optional[str] = Field(
+        default=None,
+        description="Description of any adjustments made due to market conditions",
     )
 
 

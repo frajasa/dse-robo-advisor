@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { GENERATE_PORTFOLIO_MUTATION, CREATE_PROFILE_MUTATION, UPDATE_PROFILE_MUTATION } from "@/lib/graphql/mutations";
-import { MY_PROFILE_QUERY } from "@/lib/graphql/queries";
+import { MY_PROFILE_QUERY, MY_PORTFOLIOS_QUERY } from "@/lib/graphql/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,7 +91,8 @@ export default function AdvisorPage() {
   const [createProfile] = useMutation(CREATE_PROFILE_MUTATION);
   const [updateProfile] = useMutation(UPDATE_PROFILE_MUTATION);
   const [generatePortfolio, { loading: generating }] = useMutation(
-    GENERATE_PORTFOLIO_MUTATION
+    GENERATE_PORTFOLIO_MUTATION,
+    { refetchQueries: [{ query: MY_PORTFOLIOS_QUERY }] }
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

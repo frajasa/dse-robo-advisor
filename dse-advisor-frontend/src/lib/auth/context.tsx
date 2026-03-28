@@ -40,16 +40,28 @@ export function useAuth() {
 
 function extractErrorMessage(err: unknown, fallback: string): string {
   if (err && typeof err === "object" && "graphQLErrors" in err) {
-    const gqlErr = err as { graphQLErrors?: Array<{ message: string }> };
+    const gqlErr = err as { graphQLErrors?: Array<{ message: string; extensions?: { classification?: string } }> };
     if (gqlErr.graphQLErrors && gqlErr.graphQLErrors.length > 0) {
-      return gqlErr.graphQLErrors[0].message;
+      // Find the first meaningful error (skip NullValueInNonNullableField noise)
+      const meaningful = gqlErr.graphQLErrors.find(
+        (e) => e.extensions?.classification !== "NullValueInNonNullableField"
+      );
+      const msg = meaningful?.message || gqlErr.graphQLErrors[0].message;
+      // Clean up common backend error prefixes
+      return msg
+        .replace(/^INTERNAL_ERROR:\s*/i, "")
+        .replace(/^An unexpected error occurred\.\s*/i, "")
+        .trim() || fallback;
     }
   }
   if (err instanceof Error) {
     if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
       return "Unable to connect to server. Please check your connection.";
     }
-    return err.message;
+    // Strip GraphQL spec noise from the error message
+    const clean = err.message.split("The field at path")[0].trim();
+    if (clean) return clean;
+    return fallback;
   }
   return fallback;
 }

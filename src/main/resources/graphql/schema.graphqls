@@ -328,13 +328,13 @@ type Query {
 # ─── Mutations ───────────────────────────────────────────────────────────────
 
 type Mutation {
-    register(input: RegisterInput!): AuthPayload!
-    login(input: LoginInput!): AuthPayload!
+    register(input: RegisterInput!): AuthPayload
+    login(input: LoginInput!): AuthPayload
     createProfile(input: ProfileInput!): InvestorProfile!
     updateProfile(input: ProfileInput!): InvestorProfile!
     generatePortfolio(input: GeneratePortfolioInput!): Portfolio
     deletePortfolio(id: ID!): Boolean!
-    refreshToken(refreshToken: String!): AuthPayload!
+    refreshToken(refreshToken: String!): AuthPayload
     upgradeSubscription(tier: String!): Subscription!
     createReferral(brokerName: String!): BrokerReferral!
     createPriceAlert(symbol: String!, targetPrice: Float!, direction: String!): PriceAlert!

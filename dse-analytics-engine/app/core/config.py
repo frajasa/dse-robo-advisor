@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     SYNC_PRICES_ENABLED: bool = True
     SYNC_DIVIDENDS_ENABLED: bool = True
 
+    # LLM (Ollama) — optional, leave empty for rule-based fallback
+    OLLAMA_BASE_URL: str = ""
+    OLLAMA_MODEL: str = "mistral"
+
     @property
     def database_url(self) -> str:
         return (
